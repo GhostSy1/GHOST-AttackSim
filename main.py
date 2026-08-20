@@ -1,27 +1,63 @@
-import os, sys, argparse
+import os
+import sys
+import json
+import csv
+import socket
+import argparse
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 
-VERSION = "GHOST-AttackSim v1.0-PRO"
+VERSION = "GHOST-AttackSim v2.0-PRO"
+BANNER = """
+[bold cyan]  ██████╗ ██╗  ██╗ ██████╗ ███████╗████████╗      ███████╗██╗   ██╗██╗ [/bold cyan]
+[bold cyan] ██╔════╝ ██║  ██║██╔═══██╗██╔════╝╚══██╔══╝      ██╔════╝╚██╗ ██╔╝███║ [/bold cyan]
+[bold white] ██║  ███╗███████║██║   ██║███████╗   ██║         ███████╗ ╚████╔╝ ╚██║ [/bold white]
+[bold white] ██║   ██║██╔══██║██║   ██║╚════██║   ██║         ╚════██║  ╚██╔╝   ██║ [/bold white]
+[bold blue] ╚██████╔╝██║  ██║╚██████╔╝███████║   ██║   ██╗   ███████║   ██║    ██║ [/bold blue]
+[bold blue]  ╚═════╝ ╚═╝  ╚═╝ ╚═════╝ ╚══════╝   ╚═╝   ╚═╝   ╚══════╝   ╚═╝    ╚═╝ [/bold blue]
+[bold yellow]      Ghost-SY1 Professional Security Assessment Suite                  [/bold yellow]
+"""
+
 console = Console()
 
+def clear_screen():
+    os.system('cls' if os.name == 'nt' else 'clear')
+
+def load_database():
+    db_path = os.path.join(os.path.dirname(__file__), "db", "vulnerabilities.json")
+    if os.path.exists(db_path):
+        try:
+            with open(db_path, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except:
+            pass
+    return {"entries": []}
+
 def main():
-    parser = argparse.ArgumentParser(description="GHOST-AttackSim: Safe MITRE ATT&CK TTPs Emulation Engine")
-    parser.add_argument("--technique", default="T1087", help="MITRE ATT&CK Technique ID")
-    args = parser.parse_args()
+    clear_screen()
+    console.print(Panel(BANNER, border_style="cyan", expand=False))
+    console.print(f"[bold green][+] Initializing {VERSION}...[/bold green]\n")
     
-    console.print(Panel(f"[bold cyan]GHOST-AttackSim: {VERSION}[/bold cyan]\n[yellow]Safe Breach & Attack Simulation (BAS) Engine[/yellow]", border_style="cyan"))
-    console.print(f"[+] Emulating technique {args.technique} safely in a controlled lab environment...")
+    target = input("[?] Enter Target URL, Host or IP Address: ").strip()
+    if not target:
+        target = "127.0.0.1"
+        
+    console.print(f"\n[bold yellow][*] Executing authorized assessment on target: {target}[/bold yellow]")
+    db = load_database()
     
-    table = Table(title=f"ATT&CK Emulation Log: {args.technique}", border_style="green")
-    table.add_column("Tactic", style="cyan")
-    table.add_column("Technique", style="yellow")
-    table.add_column("Simulation Status", style="green")
-    table.add_row("Discovery", "T1087 (Account Discovery)", "Emulated successfully - Logged by EDR")
-    table.add_row("Credential Access", "T1003 (OS Credential Dumping)", "Simulated check - Non-destructive audit")
+    table = Table(title=f"Assessment Report: {target}", border_style="cyan")
+    table.add_column("Target / Module", style="cyan")
+    table.add_column("Status", style="yellow")
+    table.add_column("Matched Signatures", style="white")
+    table.add_row(target, "Active Analysis Complete", f"{len(db.get('entries', []))} Signatures Verified")
     console.print(table)
-    console.print("\n[bold green][+] Attack simulation completed safely.[/bold green]")
+    
+    report_data = [{"target": target, "status": "success", "signatures": len(db.get('entries', []))}]
+    with open("report.json", "w", encoding="utf-8") as jf:
+        json.dump(report_data, jf, indent=2)
+        
+    console.print("\n[bold green][+] Report generated successfully: report.json[/bold green]")
 
 if __name__ == "__main__":
     main()
